@@ -16,6 +16,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     var previousOffset = 0.0
     var headerView: TableHeaderView!
     let shouldUpdateHeader = true
+    var headerViewInitialHeight: CGFloat = 0.0
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: NSBundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -39,6 +40,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         view.addSubview(tableView)
         headerView = TableHeaderView(frame: CGRectMake(0, 0, CGRectGetWidth(tableView.bounds), 200))
         view.addSubview(headerView)
+        headerViewInitialHeight = headerView.frame.height
         tableView.contentInset = UIEdgeInsetsMake(200, tableView.contentInset.left, tableView.contentInset.bottom, tableView.contentInset.right)
         tableView.scrollIndicatorInsets = tableView.contentInset
         tableView.registerClass(UITableViewCell.self, forCellReuseIdentifier: cellIdentifier)
@@ -57,7 +59,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
 
     //MARK: TableView datasource
     func numberOfSectionsInTableView(tableView: UITableView) -> Int {
-        return 1
+        return 2
     }
 
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -70,6 +72,16 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         return cell!
     }
 
+    func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let sectionView = UIView(frame: CGRectMake(0, 0, CGRectGetWidth(tableView.bounds), 44))
+        sectionView.backgroundColor = UIColor.blueColor()
+        return sectionView
+    }
+
+    func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 44.0
+    }
+
     func scrollViewDidScroll(scrollView: UIScrollView) {
 //        let offset = Double(scrollView.contentOffset.y) - previousOffset
 //        let distanceToTravel = (200 - 64) / 2.0
@@ -80,6 +92,8 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             return
         }
         headerView.frame = CGRectMake(0, headerView.frame.origin.y, CGRectGetWidth(headerView.frame), height)
+        let insetTop = headerView.frame.height > headerViewInitialHeight ? headerViewInitialHeight : headerView.frame.height
+        scrollView.contentInset = UIEdgeInsets(top: insetTop, left: 0, bottom: 0, right: 0)
     }
 }
 
