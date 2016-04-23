@@ -17,6 +17,8 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     var headerView: TableHeaderView!
     let shouldUpdateHeader = true
     var headerViewInitialHeight: CGFloat = 0.0
+    var refreshControl: UIRefreshControl!
+    var timer: NSTimer?
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: NSBundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -37,14 +39,30 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         tableView = UITableView(frame: CGRect(origin: CGPoint(x: 0, y: 0), size: CGSize(width: CGRectGetWidth(view.bounds), height: CGRectGetHeight(view.bounds))), style: .Plain)
         tableView.delegate = self
         tableView.dataSource = self
+
+        refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: #selector(refresh), forControlEvents: .ValueChanged)
+        tableView.addSubview(refreshControl)
+        tableView.sendSubviewToBack(refreshControl)
+        
         view.addSubview(tableView)
         headerView = TableHeaderView(frame: CGRectMake(0, 0, CGRectGetWidth(tableView.bounds), 200))
         view.addSubview(headerView)
         headerViewInitialHeight = headerView.frame.height
-        tableView.contentInset = UIEdgeInsetsMake(200, tableView.contentInset.left, tableView.contentInset.bottom, tableView.contentInset.right)
+        tableView.contentInset = UIEdgeInsetsMake(headerViewInitialHeight, tableView.contentInset.left, tableView.contentInset.bottom, tableView.contentInset.right)
         tableView.scrollIndicatorInsets = tableView.contentInset
         tableView.registerClass(UITableViewCell.self, forCellReuseIdentifier: cellIdentifier)
         tableView.reloadData()
+    }
+
+    func refresh() {
+        refreshControl.beginRefreshing()
+        timer?.invalidate()
+        timer = NSTimer.scheduledTimerWithTimeInterval(5, target: self, selector: #selector(stopRefreshing), userInfo: nil, repeats: false)
+    }
+
+    func stopRefreshing() {
+        refreshControl.endRefreshing()
     }
 
     override func viewDidAppear(animated: Bool) {
@@ -91,9 +109,20 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         if headerView.frame.height == CGFloat(height) {
             return
         }
-        headerView.frame = CGRectMake(0, headerView.frame.origin.y, CGRectGetWidth(headerView.frame), height)
-        let insetTop = headerView.frame.height > headerViewInitialHeight ? headerViewInitialHeight : headerView.frame.height
-        scrollView.contentInset = UIEdgeInsets(top: insetTop, left: 0, bottom: 0, right: 0)
+        headerView.frame = CGRectMake(0, headerView.frame.origin.y, CGRectGetWidth(headerView.frame), min(height, headerViewInitialHeight))
+        if scrollView.contentOffset.y > -headerViewInitialHeight {
+            let insetTop = headerView.frame.height > headerViewInitialHeight ? headerViewInitialHeight : headerView.frame.height
+            scrollView.contentInset = UIEdgeInsets(top: insetTop, left: 0, bottom: 0, right: 0)
+            tableView.scrollIndicatorInsets = tableView.contentInset
+        }
+    }
+
+    func scrollViewDidEndDragging(scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        if headerView.frame.height > headerViewInitialHeight * 0.5 {
+            scrollView.setContentOffset(CGPoint(x: 0, y:-headerViewInitialHeight), animated: true)
+        } else if headerView.frame.height > 64.0{
+            scrollView.setContentOffset(CGPoint(x: 0, y:-64), animated: true)
+        }
     }
 }
 
